@@ -1,0 +1,154 @@
+/* design.css */
+@import url('https://fonts.googleapis.com/css?family=Montserrat:400,700&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Montserrat', sans-serif;
+}
+
+body {
+  background: #f7f7f7;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  padding: 20px;
+}
+
+.wrapper {
+  max-width: 500px;
+  width: 100%;
+  background: #fff;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  padding: 30px;
+  margin: auto;
+}
+
+.wrapper .title {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 25px;
+  color: #333;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.wrapper .form {
+  width: 100%;
+}
+
+.wrapper .form .inputfield {
+  margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+}
+
+.wrapper .form .inputfield label {
+  color: #333;
+  margin-bottom: 5px;
+  font-size: 14px;
+}
+
+.wrapper .form .inputfield .input,
+.wrapper .form .inputfield .textarea {
+  width: 100%;
+  outline: none;
+  border: 1px solid #ccc;
+  font-size: 15px;
+  padding: 10px;
+  border-radius: 5px;
+  transition: border-color 0.3s;
+}
+
+.wrapper .form .inputfield .textarea {
+  height: 100px;
+  resize: none;
+}
+
+.wrapper .form .inputfield .input:focus,
+.wrapper .form .inputfield .textarea:focus {
+  border-color: #007bff;
+}
+
+.wrapper .form .inputfield .custom_select {
+  position: relative;
+}
+
+.wrapper .form .inputfield .custom_select select {
+  width: 100%;
+  height: 40px;
+  padding: 10px;
+  font-size: 15px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  background: #fff;
+  appearance: none;
+}
+
+.wrapper .form .inputfield .custom_select:after {
+  content: '\25BC';
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.wrapper .form .inputfield .check {
+  display: flex;
+  align-items: center;
+}
+
+.wrapper .form .inputfield .check input[type="checkbox"] {
+  margin-right: 10px;
+}
+
+.wrapper .form .inputfield .btn {
+  width: 100%;
+  padding: 10px;
+  font-size: 15px;
+  border: none;
+  background: #007bff;
+  color: #fff;
+  cursor: pointer;
+  border-radius: 5px;
+  transition: background-color 0.3s;
+}
+
+.wrapper .form .inputfield .btn:hover {
+  background: #0056b3;
+}
+
+.wrapper .form .inputfield:last-child {
+  margin-bottom: 0;
+}
+
+@media (max-width: 500px) {
+  .wrapper {
+    padding: 20px;
+  }
+
+  .wrapper .form .inputfield {
+    margin-bottom: 10px;
+  }
+
+  .wrapper .form .inputfield label {
+    font-size: 13px;
+  }
+
+  .wrapper .form .inputfield .input,
+  .wrapper .form .inputfield .textarea {
+    font-size: 14px;
+  }
+
+  .wrapper .form .inputfield .custom_select select {
+    font-size: 14px;
+  }
+
+  .wrapper .form .inputfield .btn {
+    font-size: 14px;
+  }
+}

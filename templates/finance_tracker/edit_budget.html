@@ -1,0 +1,22 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit Budget</title>
+    <link rel="stylesheet" href="{% static 'fastyles.css' %}">
+</head>
+<body>
+    <div class="container">
+        <h1>Edit Budget</h1>
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit" class="edit-budget-btn">Update Budget</button>
+            
+        </form>
+        
+    </div>
+    
+</body>
+</html>

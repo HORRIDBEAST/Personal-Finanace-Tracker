@@ -1,0 +1,38 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>View Budgets</title>
+    <link rel="stylesheet" href="{% static 'fastyles.css' %}">
+</head>
+<body>
+    <div class="container">
+        <h1>My Budgets</h1>
+        <table>
+            <thead>
+                <tr>
+                    <th>Category</th>
+                    <th>Amount</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+               <!-- view_budgets.html -->
+
+{% for budget in budgets %}
+<tr>
+    <td>{{ budget.category }}</td>
+    <td>{{ budget.amount }}</td>
+    <td>
+        <a href="{% url 'edit_budget' budget.id %}">Edit</a>
+        <a href="{% url 'delete_budget' budget.id %}">Delete</a>
+    </td>
+</tr>
+{% endfor %}
+
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>

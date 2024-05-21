@@ -1,0 +1,1 @@
+web gunicorn pft.wsgi:application --log-file -

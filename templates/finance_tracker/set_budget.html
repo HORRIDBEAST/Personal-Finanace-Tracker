@@ -1,0 +1,19 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Add Budget</title>
+    <link rel="stylesheet" href="{% static 'fastyles.css' %}">
+</head>
+<body>
+    <div class="container">
+        <h1>Add Budget</h1>
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit" class="btn">Add Budget</button>
+        </form>
+    </div>
+</body>
+</html>

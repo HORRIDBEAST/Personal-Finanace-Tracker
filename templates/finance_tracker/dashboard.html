@@ -1,0 +1,348 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Finance Tracker Dashboard</title>
+    <link rel="stylesheet" href="{% static 'fstyles.css' %}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="header">
+        Findget.AI
+        
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <h2>Financial Dashboard</h2>
+            <div class="summary">
+                <div class="summary-item">
+                    <h3>Current Balance</h3>
+                    <p>₹{{ balance }}</p>
+                    <a href="{% url 'reset_balance' %}" class="btn">Reset Balance</a>
+                </div>
+                <div class="summary-item">
+                    <h3>Total Income</h3>
+                    <p>₹{{ total_income }}</p>
+                    <a href="{% url 'add_income' %}" class="btn">Add Income</a>
+                </div>
+                <div class="summary-item">
+                    <h3>Total Expenses</h3>
+                    <p>₹{{ total_expenses }}</p>
+                    <a href="{% url 'add_expense' %}" class="btn">Add Expense</a>
+                </div>
+            </div>
+            <div class="card">
+                <h1>Budget Planner</h1>
+                <div class="summary">
+                <div class="summary-item">
+                    <h3>Set Budget</h3>
+                    <a href="{% url 'set_budget' %}" class="btn">Set Budget</a>
+                </div>
+
+                <div class="summary-item">
+                    <h3>Edit Budget</h3>
+                    {% if budgets %}
+                        <a href="{% url 'edit_budget' budget_id=budgets.0.id %}" class="btn">Edit Budget</a>
+                    {% else %}
+                        <span>No budget available</span>
+                    {% endif %}
+                </div>
+
+                <div class="summary-item">
+                    <h3>View Budget</h3>
+                    <a href="{% url 'view_budgets' %}" class="btn">View Budget</a>
+                </div>
+
+            </div>
+        </div>
+        </div>
+        <div class="card">
+            <div class="charts">
+                <div class="chart-container">
+                    <h2>Financial Statistics</h2>
+                    <canvas id="financialStatistics"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h2>Total Spending</h2>
+                    <canvas id="totalSpending"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Budget vs Actual Expenses</h2>
+            <div class="chart-container">
+                <canvas id="budgetVsActualExpenses"></canvas>
+            </div>
+        </div>
+
+        </div>
+    </div>
+
+    <div class="transaction-container">
+        <div class="search-bar">
+            <input type="text" id="search" placeholder="Search by Name">
+            <select id="filter">
+                <option value="all">All</option>
+                <option value="income">Income</option>
+                <option value="expenses">Expenses</option>
+            </select>
+        </div>
+      
+        <div class="transcont"> <h1>Trasaction and Budget Tracker </h1>
+        <div class="transactions">
+            <h2>My Transactions</h2>
+      
+            <div class="transaction-controls">
+                <div class="sort-buttons">
+                    <button id="sort-date">Sort by Date</button>
+                    <button id="sort-amount">Sort by Amount</button>
+                </div>
+      
+                <div class="export-import-buttons">
+                    <button id="export-csv">Export to CSV</button>
+                    <input type="file" id="import-csv-file" accept=".csv" style="display:none;">
+                    <button id="import-csv-button">Import from CSV</button>
+                </div>
+            </div>
+        </div>
+      
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Type</th>
+                        <th>Date</th>
+                        <th>Amount</th>
+                        <th>Balance</th>
+                        <th>Tag</th>
+                    </tr>
+                </thead>
+                <tbody id="transaction-table">
+                    
+                </tbody>
+            </table>            
+            <div class="pagination">
+                <button class="pagination-btn">&lt;</button>
+                <span class="current-page">1</span>
+                <button class="pagination-btn">&gt;</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const spendingData = JSON.parse('{{ spending_data|escapejs }}');
+        let transactions = JSON.parse('{{ transactions|escapejs }}');
+        const budgetData = JSON.parse('{{ budget_data|escapejs }}');
+        let filteredTransactions = [...transactions];
+
+        function renderTransactions(transactions) {
+            const tableBody = document.getElementById('transaction-table');
+            tableBody.innerHTML = ''; // Clear existing rows
+        
+            let balance = 0; // Initialize balance
+        
+            transactions.forEach(transaction => {
+                // Update balance based on transaction type
+                if (transaction.transaction_type === 'Income') {
+                    balance += transaction.amount; // Add income to balance
+                } else if (transaction.transaction_type === 'Expense') {
+                    balance -= transaction.amount; // Subtract expense from balance
+                }
+        
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${transaction.description}</td>
+                    <td>${transaction.transaction_type}</td>
+                    <td>${transaction.date}</td>
+                    <td>${transaction.amount}</td>
+                    <td>${balance}</td> <!-- Display balance -->
+                    <td>${transaction.tag}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+        
+
+        // Function to create charts
+        function createCharts() {
+            // Financial Statistics Chart
+            var financialCtx = document.getElementById('financialStatistics').getContext('2d');
+            var financialStatistics = new Chart(financialCtx, {
+                type: 'bar',
+                data: {
+                    labels: ["Incomes", "Expenses"],
+                    datasets: [{
+                        label: 'Amount',
+                        data: [{{ total_income }}, {{ total_expenses }}],
+                        backgroundColor: ['rgba(75, 192, 192, 0.2)', 'rgba(255, 99, 132, 0.2)'],
+                        borderColor: ['rgba(75, 192, 192, 1)', 'rgba(255, 99, 132, 1)'],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // Total Spending Chart
+            var spendingCtx = document.getElementById('totalSpending').getContext('2d');
+            var spendingLabels = spendingData.map(item => item[0]);
+            var spendingAmounts = spendingData.map(item => item[1]);
+            new Chart(spendingCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: spendingLabels,
+                    datasets: [{
+                        data: spendingAmounts,
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.2)',
+                            'rgba(54, 162, 235, 0.2)',
+                            'rgba(255, 206, 86, 0.2)',
+                            'rgba(75, 192, 192, 0.2)',
+                            'rgba(153, 102, 255, 0.2)',
+                            'rgba(255, 159, 64, 0.2)',
+                            'rgba(199, 199, 199, 0.2)'
+                        ],
+                        borderColor: [
+                            'rgba(255, 99, 132, 1)',
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(255, 206, 86, 1)',
+                            'rgba(75, 192, 192, 1)',
+                            'rgba(153, 102, 255, 1)',
+                            'rgba(255, 159, 64, 1)',
+                            'rgba(199, 199, 199, 1)'
+                        ],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true
+                }
+            });
+        }
+
+ // Budget vs Actual Expenses Chart
+ var budgetVsActualCtx = document.getElementById('budgetVsActualExpenses').getContext('2d');
+ var categories = budgetData.map(item => item.category);  // Assuming budgetData contains category info
+ var budgetAmounts = budgetData.map(item => item.budget);
+ var actualAmounts = budgetData.map(item => item.actual);
+
+ new Chart(budgetVsActualCtx, {
+     type: 'bar',
+     data: {
+         labels: categories,
+         datasets: [
+             {
+                 label: 'Budget',
+                 data: budgetAmounts,
+                 backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                 borderColor: 'rgba(54, 162, 235, 1)',
+                 borderWidth: 1
+             },
+             {
+                 label: 'Actual',
+                 data: actualAmounts,
+                 backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                 borderColor: 'rgba(255, 99, 132, 1)',
+                 borderWidth: 1
+             }
+         ]
+     },
+     options: {
+         responsive: true,
+         scales: {
+             y: {
+                 beginAtZero: true
+             }
+         }
+     }
+ });
+
+
+
+        function filterTransactions() {
+            const searchInput = document.getElementById('search').value.toLowerCase();
+            const filterType = document.getElementById('filter').value;
+            filteredTransactions = transactions.filter(transaction => {
+                const matchesSearch = transaction.description.toLowerCase().includes(searchInput);
+                const matchesFilter = filterType === 'all' || transaction.transaction_type === filterType;
+                return matchesSearch && matchesFilter;
+            });
+            renderTransactions(filteredTransactions);
+        }
+
+        function sortTransactions(criteria) {
+            filteredTransactions.sort((a, b) => {
+                if (criteria === 'date') {
+                    return new Date(a.date) - new Date(b.date);
+                } else if (criteria === 'amount') {
+                    return a.amount - b.amount;
+                }
+            });
+            renderTransactions(filteredTransactions);
+        }
+
+        function exportToCSV() {
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Name,Type,Date,Amount,Tag\n";
+            transactions.forEach(transaction => {
+                csvContent += `${transaction.description},${transaction.transaction_type},${transaction.date},${transaction.amount},${transaction.tag}\n`;
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "transactions.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function importFromCSV(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const csv = e.target.result;
+                const lines = csv.split("\n");
+                const newTransactions = [];
+
+                for (let i = 1; i < lines.length; i++) { // Skip header line
+                    const line = lines[i].trim();
+                    if (!line) continue;
+
+                    const [description, transaction_type, date, amount, tag] = line.split(",");
+                    newTransactions.push({ description, transaction_type, date, amount: parseFloat(amount), tag });
+                }
+
+                transactions = transactions.concat(newTransactions);
+                filteredTransactions = [...transactions];
+                renderTransactions(filteredTransactions);
+            };
+            reader.readAsText(file);
+        }
+
+        document.getElementById('search').addEventListener('input', filterTransactions);
+        document.getElementById('filter').addEventListener('change', filterTransactions);
+        document.getElementById('sort-date').addEventListener('click', () => sortTransactions('date'));
+        document.getElementById('sort-amount').addEventListener('click', () => sortTransactions('amount'));
+        document.getElementById('export-csv').addEventListener('click', exportToCSV);
+        document.getElementById('import-csv-button').addEventListener('click', () => document.getElementById('import-csv-file').click());
+        document.getElementById('import-csv-file').addEventListener('change', importFromCSV);
+
+        document.addEventListener('DOMContentLoaded', function() {
+            renderTransactions(transactions);
+            createCharts();
+        });
+    </script>
+</body>
+</html>
