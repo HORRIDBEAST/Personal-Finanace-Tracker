@@ -5,15 +5,19 @@
     <meta charset="UTF-8">
     <title>Finance Tracker Dashboard</title>
     <link rel="stylesheet" href="{% static 'fstyles.css' %}">
+
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Shepherd.js CSS and JS -->
+    <link rel="stylesheet" href="https://unpkg.com/shepherd.js/dist/css/shepherd.css">
+    <script src="https://unpkg.com/@shepherdjs/shepherd@8.0.0/dist/js/shepherd.min.js"></script>
 </head>
 <body>
-    <div class="header">
-        Findget.AI
-        
-    </div>
+    <div class="header">Findget.AI</div>
 
     <div class="container">
+        <!-- Financial Dashboard Summary -->
         <div class="card">
             <h2>Financial Dashboard</h2>
             <div class="summary">
@@ -33,31 +37,32 @@
                     <a href="{% url 'add_expense' %}" class="btn">Add Expense</a>
                 </div>
             </div>
+
+            <!-- Budget Planner Section -->
             <div class="card">
                 <h1>Budget Planner</h1>
                 <div class="summary">
-                <div class="summary-item">
-                    <h3>Set Budget</h3>
-                    <a href="{% url 'set_budget' %}" class="btn">Set Budget</a>
+                    <div class="summary-item">
+                        <h3>Set Budget</h3>
+                        <a href="{% url 'set_budget' %}" class="btn">Set Budget</a>
+                    </div>
+                    <div class="summary-item">
+                        <h3>Edit Budget</h3>
+                        {% if budgets %}
+                            <a href="{% url 'edit_budget' budget_id=budgets.0.id %}" class="btn">Edit Budget</a>
+                        {% else %}
+                            <span>No budget available</span>
+                        {% endif %}
+                    </div>
+                    <div class="summary-item">
+                        <h3>View Budget</h3>
+                        <a href="{% url 'view_budgets' %}" class="btn">View Budget</a>
+                    </div>
                 </div>
-
-                <div class="summary-item">
-                    <h3>Edit Budget</h3>
-                    {% if budgets %}
-                        <a href="{% url 'edit_budget' budget_id=budgets.0.id %}" class="btn">Edit Budget</a>
-                    {% else %}
-                        <span>No budget available</span>
-                    {% endif %}
-                </div>
-
-                <div class="summary-item">
-                    <h3>View Budget</h3>
-                    <a href="{% url 'view_budgets' %}" class="btn">View Budget</a>
-                </div>
-
             </div>
         </div>
-        </div>
+
+        <!-- Charts Section -->
         <div class="card">
             <div class="charts">
                 <div class="chart-container">
@@ -71,16 +76,16 @@
             </div>
         </div>
 
+        <!-- Budget vs Actual Expenses -->
         <div class="card">
             <h2>Budget vs Actual Expenses</h2>
             <div class="chart-container">
                 <canvas id="budgetVsActualExpenses"></canvas>
             </div>
         </div>
-
-        </div>
     </div>
 
+    <!-- Transactions Section -->
     <div class="transaction-container">
         <div class="search-bar">
             <input type="text" id="search" placeholder="Search by Name">
@@ -91,59 +96,57 @@
             </select>
         </div>
       
-        <div class="transcont"> <h1>Trasaction and Budget Tracker </h1>
-        <div class="transactions">
-            <h2>My Transactions</h2>
-      
-            <div class="transaction-controls">
-                <div class="sort-buttons">
-                    <button id="sort-date">Sort by Date</button>
-                    <button id="sort-amount">Sort by Amount</button>
+        <div class="transcont">
+            <h1>Transaction and Budget Tracker</h1>
+            <div class="transactions">
+                <h2>My Transactions</h2>
+                <div class="transaction-controls">
+                    <div class="sort-buttons">
+                        <button id="sort-date">Sort by Date</button>
+                        <button id="sort-amount">Sort by Amount</button>
+                    </div>
+                    <div class="export-import-buttons">
+                        <button id="export-csv">Export to CSV</button>
+                        <input type="file" id="import-csv-file" accept=".csv" style="display:none;">
+                        <button id="import-csv-button">Import from CSV</button>
+                    </div>
                 </div>
-      
-                <div class="export-import-buttons">
-                    <button id="export-csv">Export to CSV</button>
-                    <input type="file" id="import-csv-file" accept=".csv" style="display:none;">
-                    <button id="import-csv-button">Import from CSV</button>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Date</th>
+                            <th>Amount</th>
+                            <th>Balance</th>
+                            <th>Tag</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transaction-table"></tbody>
+                </table>
+                <div class="pagination">
+                    <button class="pagination-btn">&lt;</button>
+                    <span class="current-page">1</span>
+                    <button class="pagination-btn">&gt;</button>
                 </div>
-            </div>
-        </div>
-      
-            <table>
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Type</th>
-                        <th>Date</th>
-                        <th>Amount</th>
-                        <th>Balance</th>
-                        <th>Tag</th>
-                    </tr>
-                </thead>
-                <tbody id="transaction-table">
-                    
-                </tbody>
-            </table>            
-            <div class="pagination">
-                <button class="pagination-btn">&lt;</button>
-                <span class="current-page">1</span>
-                <button class="pagination-btn">&gt;</button>
             </div>
         </div>
     </div>
 
+    <!-- JavaScript for Charts and Shepherd.js Tour -->
     <script>
         const spendingData = JSON.parse('{{ spending_data|escapejs }}');
         let transactions = JSON.parse('{{ transactions|escapejs }}');
         const budgetData = JSON.parse('{{ budget_data|escapejs }}');
         let filteredTransactions = [...transactions];
 
+        // Function to render transactions
         function renderTransactions(transactions) {
             const tableBody = document.getElementById('transaction-table');
             tableBody.innerHTML = ''; // Clear existing rows
-        
+
             let balance = 0; // Initialize balance
-        
+
             transactions.forEach(transaction => {
                 // Update balance based on transaction type
                 if (transaction.transaction_type === 'Income') {
@@ -151,7 +154,7 @@
                 } else if (transaction.transaction_type === 'Expense') {
                     balance -= transaction.amount; // Subtract expense from balance
                 }
-        
+
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>${transaction.description}</td>
@@ -164,7 +167,6 @@
                 tableBody.appendChild(row);
             });
         }
-        
 
         // Function to create charts
         function createCharts() {
@@ -229,44 +231,42 @@
             });
         }
 
- // Budget vs Actual Expenses Chart
- var budgetVsActualCtx = document.getElementById('budgetVsActualExpenses').getContext('2d');
- var categories = budgetData.map(item => item.category);  // Assuming budgetData contains category info
- var budgetAmounts = budgetData.map(item => item.budget);
- var actualAmounts = budgetData.map(item => item.actual);
+        // Budget vs Actual Expenses Chart
+        var budgetVsActualCtx = document.getElementById('budgetVsActualExpenses').getContext('2d');
+        var categories = budgetData.map(item => item.category);  // Assuming budgetData contains category info
+        var budgetAmounts = budgetData.map(item => item.budget);
+        var actualAmounts = budgetData.map(item => item.actual);
 
- new Chart(budgetVsActualCtx, {
-     type: 'bar',
-     data: {
-         labels: categories,
-         datasets: [
-             {
-                 label: 'Budget',
-                 data: budgetAmounts,
-                 backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                 borderColor: 'rgba(54, 162, 235, 1)',
-                 borderWidth: 1
-             },
-             {
-                 label: 'Actual',
-                 data: actualAmounts,
-                 backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                 borderColor: 'rgba(255, 99, 132, 1)',
-                 borderWidth: 1
-             }
-         ]
-     },
-     options: {
-         responsive: true,
-         scales: {
-             y: {
-                 beginAtZero: true
-             }
-         }
-     }
- });
-
-
+        new Chart(budgetVsActualCtx, {
+            type: 'bar',
+            data: {
+                labels: categories,
+                datasets: [
+                    {
+                        label: 'Budget',
+                        data: budgetAmounts,
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Actual',
+                        data: actualAmounts,
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
 
         function filterTransactions() {
             const searchInput = document.getElementById('search').value.toLowerCase();
@@ -342,6 +342,128 @@
         document.addEventListener('DOMContentLoaded', function() {
             renderTransactions(transactions);
             createCharts();
+
+            // Initialize Shepherd.js
+            const tour = new Shepherd.Tour({
+                useModalOverlay: true,
+                defaultStepOptions: {
+                    cancelIcon: {
+                        enabled: true
+                    },
+                    classes: 'shadow-md bg-purple-dark',
+                    scrollTo: { behavior: 'smooth', block: 'center' }
+                }
+            });
+
+            // Add steps to the tour
+            tour.addStep({
+                id: 'welcome',
+                text: 'Welcome to your Finance Tracker Dashboard! Let me show you around.',
+                buttons: [
+                    {
+                        text: 'Next',
+                        action: tour.next
+                    }
+                ]
+            });
+
+            tour.addStep({
+                id: 'balance',
+                text: 'This is your current balance. It shows the difference between your total income and expenses.',
+                attachTo: {
+                    element: '.summary-item:nth-of-type(1)',
+                    on: 'bottom'
+                },
+                buttons: [
+                    {
+                        text: 'Back',
+                        action: tour.back
+                    },
+                    {
+                        text: 'Next',
+                        action: tour.next
+                    }
+                ]
+            });
+
+            tour.addStep({
+                id: 'income',
+                text: 'Here you can see your total income. You can add new income by clicking "Add Income".',
+                attachTo: {
+                    element: '.summary-item:nth-of-type(2)',
+                    on: 'bottom'
+                },
+                buttons: [
+                    {
+                        text: 'Back',
+                        action: tour.back
+                    },
+                    {
+                        text: 'Next',
+                        action: tour.next
+                    }
+                ]
+            });
+
+            tour.addStep({
+                id: 'expenses',
+                text: 'This section shows your total expenses. You can add new expenses by clicking "Add Expense".',
+                attachTo: {
+                    element: '.summary-item:nth-of-type(3)',
+                    on: 'bottom'
+                },
+                buttons: [
+                    {
+                        text: 'Back',
+                        action: tour.back
+                    },
+                    {
+                        text: 'Next',
+                        action: tour.next
+                    }
+                ]
+            });
+
+            tour.addStep({
+                id: 'budget',
+                text: 'In the Budget Planner, you can set and view your budget for different categories.',
+                attachTo: {
+                    element: '.card:nth-of-type(2)',
+                    on: 'bottom'
+                },
+                buttons: [
+                    {
+                        text: 'Back',
+                        action: tour.back
+                    },
+                    {
+                        text: 'Next',
+                        action: tour.next
+                    }
+                ]
+            });
+
+            tour.addStep({
+                id: 'statistics',
+                text: 'This section contains charts showing your financial statistics and total spending.',
+                attachTo: {
+                    element: '.card:nth-of-type(3)',
+                    on: 'top'
+                },
+                buttons: [
+                    {
+                        text: 'Back',
+                        action: tour.back
+                    },
+                    {
+                        text: 'Finish',
+                        action: tour.complete
+                    }
+                ]
+            });
+
+            // Start the tour
+            tour.start();
         });
     </script>
 </body>
